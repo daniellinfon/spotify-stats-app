@@ -19,6 +19,7 @@ SPOTIFY_SCOPES = [
     "user-top-read",               # Top artists y tracks
     "playlist-modify-public",      # Crear playlists públicas (Fase 5)
     "playlist-modify-private",     # Crear playlists privadas (Fase 5)
+    "user-read-recently-played",
 ]
 
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
