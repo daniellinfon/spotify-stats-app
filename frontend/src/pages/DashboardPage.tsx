@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Navbar from '../components/layout/Navbar'
 import { useTopArtists, useTopTracks, useRecentlyPlayed } from '../hooks/useSpotifyData'
+import ChatPanel from '../components/chat/ChatPanel'
 
 type TimeRange = 'short_term' | 'medium_term' | 'long_term'
 
@@ -158,6 +159,11 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* CHAT AGENT */}
+        <div style={styles.section}>
+          <div style={styles.sectionTitle}>🤖 DJ Agent — Chat con tu música</div>
+          <ChatPanel />
+        </div>
       </div>
     </div>
   )
