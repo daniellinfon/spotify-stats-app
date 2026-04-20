@@ -1,0 +1,14 @@
+# Dockerfile SOLO para desarrollo con hot-reload de Vite
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --frozen-lockfile
+
+COPY . .
+
+EXPOSE 5173
+
+# '--host' expone el servidor de Vite fuera del contenedor
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

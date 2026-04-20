@@ -1,0 +1,56 @@
+# =============================================
+# Docker Compose para DESARROLLO
+# Características: hot-reload, volúmenes montados, sin optimización de tamaño
+# =============================================
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: spotify_stats_backend
+    # En desarrollo, sobreescribimos el CMD del Dockerfile con --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      # Montamos el código fuente para hot-reload sin reconstruir imagen
+      - ./backend/app:/app/app
+      # Montamos el .env para que lo lea Pydantic Settings
+      - ./backend/.env:/app/.env
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - spotify_stats_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      # En desarrollo, usamos un Dockerfile específico con el dev server de Vite
+      dockerfile: Dockerfile.dev
+    container_name: spotify_stats_frontend
+    volumes:
+      # Hot-reload de Vite: monta todo el código fuente
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      # Excluimos node_modules del montaje (los del contenedor tienen prioridad)
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      # URL del backend que el navegador usará directamente (dev)
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - spotify_stats_network
+
+networks:
+  spotify_stats_network:
+    driver: bridge

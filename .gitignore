@@ -1,0 +1,60 @@
+# =============================================
+# Python / Backend
+# =============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.log
+
+# =============================================
+# Variables de Entorno (¡CRÍTICO! Nunca commitear)
+# =============================================
+.env
+.env.local
+.env.*.local
+*.env
+
+# =============================================
+# Node / Frontend
+# =============================================
+node_modules/
+frontend/dist/
+frontend/build/
+.npm
+
+# =============================================
+# Docker
+# =============================================
+# No ignoramos docker-compose porque sí lo queremos versionar
+# Pero sí ignoramos overrides locales
+docker-compose.override.yml
+
+# =============================================
+# IDEs y Editores
+# =============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# =============================================
+# Miscellaneous
+# =============================================
+*.pem
+*.key
+*.cert
