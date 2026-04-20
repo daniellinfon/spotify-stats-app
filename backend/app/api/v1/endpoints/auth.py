@@ -94,7 +94,7 @@ async def spotify_callback(
 
     # Redirigir al frontend con la cookie establecida
     redirect = RedirectResponse(
-        url="http://localhost:5173/dashboard",
+        url="http://127.0.0.1:5173/dashboard",
         status_code=status.HTTP_302_FOUND,
     )
     redirect.set_cookie(
@@ -128,7 +128,7 @@ async def get_me(current_user: dict = Depends(get_current_user)) -> dict:
 async def logout() -> RedirectResponse:
     """Elimina la cookie de sesión. Simple y efectivo."""
     response = RedirectResponse(
-        url="http://localhost:5173",
+        url="http://127.0.0.1:5173",
         status_code=status.HTTP_302_FOUND,
     )
     response.delete_cookie(key="session_token", path="/")

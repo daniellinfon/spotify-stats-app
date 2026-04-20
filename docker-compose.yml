@@ -45,6 +45,8 @@ services:
     environment:
       # URL del backend que el navegador usará directamente (dev)
       - VITE_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true      # ← añade esto
+      - CHOKIDAR_INTERVAL=300
     depends_on:
       backend:
         condition: service_healthy
