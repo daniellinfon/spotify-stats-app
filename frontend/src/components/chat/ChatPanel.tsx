@@ -128,7 +128,7 @@ export default function ChatPanel() {
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: '650px',
+      height: '100%',
       background: '#111',
       borderRadius: 12,
       overflow: 'hidden',

@@ -2,17 +2,13 @@
 Tools del agente LangGraph.
 """
 import asyncio
-import httpx
 import concurrent.futures
+import httpx
 from langchain_core.tools import tool
 from app.services.spotify_client import SpotifyClient
 
 
 def run_async(coro):
-    """
-    Ejecuta una corrutina async de forma segura desde código síncrono,
-    incluso si hay un event loop corriendo (como en FastAPI).
-    """
     with concurrent.futures.ThreadPoolExecutor() as pool:
         future = pool.submit(asyncio.run, coro)
         return future.result()
@@ -21,55 +17,52 @@ def run_async(coro):
 def create_spotify_tools(access_token: str) -> list:
 
     @tool
-    def get_top_artists(time_range: str = "medium_term") -> str:
+    def get_top_artists(time_range: str) -> str:
         """
-        Obtiene los top artistas del usuario en Spotify.
-        Úsala cuando el usuario pregunte por sus artistas favoritos.
-
+        Obtiene los artistas mas escuchados del usuario.
         Args:
-            time_range: 'short_term' (4 semanas), 'medium_term' (6 meses), 'long_term' (siempre)
+            time_range: periodo de tiempo. Valores posibles: short_term, medium_term, long_term
         """
         client = SpotifyClient(access_token)
         data = run_async(client.get_top_artists(time_range=time_range, limit=10))
         artists = data.get("items", [])
-
+        if not artists:
+            return "No se encontraron artistas."
         result = f"Top artistas ({time_range}):\n"
         for i, artist in enumerate(artists, 1):
-            genres = ", ".join(artist.get("genres", [])[:2]) or "sin géneros"
-            result += f"{i}. {artist['name']} (géneros: {genres})\n"
+            result += f"{i}. {artist['name']}\n"
         return result
 
     @tool
-    def get_top_tracks(time_range: str = "medium_term") -> str:
+    def get_top_tracks(time_range: str) -> str:
         """
-        Obtiene los top tracks del usuario en Spotify.
-        Úsala cuando el usuario pregunte por sus canciones favoritas.
-        Devuelve también los URIs necesarios para crear playlists.
-
+        Obtiene las canciones mas escuchadas del usuario.
         Args:
-            time_range: 'short_term' (4 semanas), 'medium_term' (6 meses), 'long_term' (siempre)
+            time_range: periodo de tiempo. Valores posibles: short_term, medium_term, long_term
         """
         client = SpotifyClient(access_token)
         data = run_async(client.get_top_tracks(time_range=time_range, limit=10))
         tracks = data.get("items", [])
-
-        result = f"Top tracks ({time_range}):\n"
+        if not tracks:
+            return "No se encontraron canciones."
+        result = f"Top canciones ({time_range}):\n"
         for i, track in enumerate(tracks, 1):
             artists = ", ".join([a["name"] for a in track.get("artists", [])])
             uri = f"spotify:track:{track['id']}"
-            result += f"{i}. {track['name']} - {artists} (URI: {uri})\n"
+            result += f"{i}. {track['name']} - {artists} | URI: {uri}\n"
         return result
 
     @tool
     def get_recently_played() -> str:
         """
-        Obtiene las últimas canciones escuchadas por el usuario.
-        Úsala cuando el usuario pregunte qué ha escuchado últimamente.
+        Obtiene las ultimas canciones escuchadas por el usuario recientemente.
+        No necesita parametros.
         """
         client = SpotifyClient(access_token)
         data = run_async(client.get_recently_played(limit=10))
         items = data.get("items", [])
-
+        if not items:
+            return "No se encontraron canciones recientes."
         result = "Canciones escuchadas recientemente:\n"
         for i, item in enumerate(items, 1):
             track = item["track"]
@@ -80,27 +73,24 @@ def create_spotify_tools(access_token: str) -> list:
     @tool
     def create_playlist(name: str, description: str, track_uris: str) -> str:
         """
-        Crea una playlist en Spotify con las canciones especificadas.
-        Úsala cuando el usuario pida crear una playlist.
-        Primero obtén los tracks con get_top_tracks, luego usa sus URIs.
-
+        Crea una playlist en Spotify. Primero usa get_top_tracks para obtener los URIs.
         Args:
-            name: Nombre de la playlist
-            description: Descripción de la playlist
-            track_uris: URIs de Spotify separados por comas (formato: 'spotify:track:ID1,spotify:track:ID2')
+            name: nombre de la playlist
+            description: descripcion de la playlist
+            track_uris: URIs separados por comas, ejemplo: spotify:track:ABC,spotify:track:XYZ
         """
-        uris = [uri.strip() for uri in track_uris.split(",") if uri.strip()]
+        uris = [u.strip() for u in track_uris.split(",") if u.strip()]
 
         async def _create():
             async with httpx.AsyncClient() as http:
-                me_response = await http.get(
+                me = await http.get(
                     "https://api.spotify.com/v1/me",
                     headers={"Authorization": f"Bearer {access_token}"},
                 )
-                me_response.raise_for_status()
-                user_id = me_response.json()["id"]
+                me.raise_for_status()
+                user_id = me.json()["id"]
 
-                playlist_response = await http.post(
+                pl = await http.post(
                     f"https://api.spotify.com/v1/users/{user_id}/playlists",
                     headers={
                         "Authorization": f"Bearer {access_token}",
@@ -108,8 +98,8 @@ def create_spotify_tools(access_token: str) -> list:
                     },
                     json={"name": name, "description": description, "public": False},
                 )
-                playlist_response.raise_for_status()
-                playlist = playlist_response.json()
+                pl.raise_for_status()
+                playlist = pl.json()
 
                 if uris:
                     await http.post(
@@ -124,8 +114,8 @@ def create_spotify_tools(access_token: str) -> list:
 
         playlist = run_async(_create())
         return (
-            f"✅ Playlist '{name}' creada con {len(uris)} canciones. "
-            f"Puedes verla en: {playlist['external_urls']['spotify']}"
+            f"Playlist '{name}' creada con {len(uris)} canciones. "
+            f"Link: {playlist['external_urls']['spotify']}"
         )
 
     return [get_top_artists, get_top_tracks, get_recently_played, create_playlist]

@@ -44,23 +44,21 @@ async def chat(
     messages.append(HumanMessage(content=request.message))
 
     async def generate():
-        """Generador que hace streaming de la respuesta token a token."""
         try:
-            async for event in agent.astream_events(
-                {"messages": messages},
-                version="v2",
+            final_response = ""
+            async for chunk in agent.astream(
+                {"messages": messages, "tool_result": "", "iterations": 0}
             ):
-                # Solo nos interesan los tokens del LLM, no eventos internos
-                if (
-                    event["event"] == "on_chat_model_stream"
-                    and event["name"] == "ChatGroq"
-                ):
-                    chunk = event["data"]["chunk"]
-                    if chunk.content:
-                        yield chunk.content
+                if "agent" in chunk:
+                    for msg in chunk["agent"].get("messages", []):
+                        if hasattr(msg, "content") and msg.content:
+                            # Solo mostramos mensajes que NO sean tool calls
+                            if "TOOL:" not in msg.content:
+                                final_response = msg.content
+            yield final_response
         except Exception as e:
-            yield f"\n[Error del agente: {str(e)}]"
-
+            yield f"\n[Error: {str(e)}]"
+            
     return StreamingResponse(
         generate(),
         media_type="text/plain",

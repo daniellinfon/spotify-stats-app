@@ -1,13 +1,9 @@
-/**
- * Routing principal.
- * Al cargar, intentamos obtener el perfil del usuario (/auth/me).
- * Si tiene cookie válida → dashboard. Si no → login.
- */
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import ChatPage from './pages/ChatPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore()
@@ -32,9 +28,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
+          <ProtectedRoute><DashboardPage /></ProtectedRoute>
+        } />
+        <Route path="/chat" element={
+          <ProtectedRoute><ChatPage /></ProtectedRoute>
         } />
       </Routes>
     </BrowserRouter>
